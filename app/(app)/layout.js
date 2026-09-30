@@ -8,7 +8,7 @@ import ThemeToggle from "@/components/ThemeToggle";
 const NAV = [
   ["/dashboard", "Dashboard"], ["/accounts", "Accounts"], ["/bank", "Bank transactions"],
   ["/cards", "Card transactions"], ["/salary", "Salary"], ["/budget", "Annual budget"],
-  ["/projection", "Future projection"], ["/household", "Household"], ["/export", "Export"],
+  ["/projection", "Future projection"], ["/household", "Household"], ["/export", "Export / Import"],
 ];
 
 export default function AppLayout({ children }) {
