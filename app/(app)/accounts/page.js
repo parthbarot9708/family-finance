@@ -12,6 +12,8 @@ export default function Accounts() {
   const [latest, setLatest] = useState(0);
   const [f, setF] = useState({ kind: "bank", institution: BANKS[0], name: "", amount: "" });
   const [error, setError] = useState("");
+  const [editId, setEditId] = useState(null);
+  const [ed, setEd] = useState({ institution: "", name: "", amount: "" });
   const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
 
   async function load() {
@@ -35,6 +37,15 @@ export default function Accounts() {
     if (!confirm(`Delete ${a.institution} – ${a.name} and all its transactions?`)) return;
     await supabase.from("accounts").delete().eq("id", a.id);
     load();
+  }
+  function startEdit(a) {
+    setEd({ institution: a.institution, name: a.name, amount: String((a.kind === "card" ? a.credit_limit : a.opening_balance) ?? 0) });
+    setEditId(a.id); setError("");
+  }
+  async function saveEdit(a) {
+    const amt = Number(ed.amount) || 0;
+    const { error } = await supabase.from("accounts").update({ institution: ed.institution, name: ed.name || ed.institution, ...(a.kind === "card" ? { credit_limit: amt } : { opening_balance: amt }) }).eq("id", a.id);
+    if (error) setError(error.message); else { setEditId(null); load(); }
   }
   if (!accounts) return null;
 
@@ -64,11 +75,22 @@ export default function Accounts() {
           const iExp = mine.reduce((s, t) => s + Number(t.expense) * (t.fx_rate_inr ?? latest), 0);
           const isCard = a.kind === "card";
           const bal = (isCard ? Number(a.credit_limit) : Number(a.opening_balance)) + inc - exp;
+          if (editId === a.id) return (
+            <div className="card" key={a.id}>
+              <strong>Edit account</strong>
+              <div style={{ display: "grid", gap: ".6rem", margin: ".75rem 0" }}>
+                <label className="field" style={{ margin: 0 }}>{isCard ? "Card" : "Bank"}<select className="sel" value={ed.institution} onChange={(e) => setEd({ ...ed, institution: e.target.value })}>{(isCard ? CARDS : BANKS).concat(ed.institution && !(isCard ? CARDS : BANKS).includes(ed.institution) ? [ed.institution] : []).map((o) => <option key={o}>{o}</option>)}</select></label>
+                <label className="field" style={{ margin: 0 }}>Nickname<input className="sel" value={ed.name} onChange={(e) => setEd({ ...ed, name: e.target.value })} /></label>
+                <label className="field" style={{ margin: 0 }}>{isCard ? "Credit limit (CAD)" : "Opening balance (CAD)"}<input className="sel" type="number" step="0.01" value={ed.amount} onChange={(e) => setEd({ ...ed, amount: e.target.value })} /></label>
+              </div>
+              <div style={{ display: "flex", gap: ".5rem" }}><button className="btn" onClick={() => saveEdit(a)}>Save</button><button className="btn ghost" onClick={() => setEditId(null)}>Cancel</button></div>
+            </div>
+          );
           return (
             <div className="card stat" key={a.id}>
               <div style={{ display: "flex", justifyContent: "space-between" }}>
                 <strong>{a.institution} – {a.name}</strong>
-                <button className="x" aria-label="Delete account" onClick={() => del(a)}>✕</button>
+                <span><button className="x" aria-label="Edit account" title="Edit opening balance or limit" onClick={() => startEdit(a)}>✎</button> <button className="x" aria-label="Delete account" onClick={() => del(a)}>✕</button></span>
               </div>
               <small>{isCard ? "Credit remaining" : "Balance"}</small>
               <h2 className={bal < 0 ? "neg" : ""}>{cad(bal)}</h2>

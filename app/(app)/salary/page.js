@@ -1,84 +1,71 @@
 "use client";
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { getRate } from "@/lib/fx";
 import { cad, inr } from "@/lib/format";
+import { FilterBar, applyFilters, emptyFilters, isFiltered } from "@/components/Filters";
 import "@/components/tx.css";
 
 export default function Salary() {
-  const today = new Date().toISOString().slice(0, 10);
   const [rows, setRows] = useState(null);
   const [latest, setLatest] = useState(0);
-  const [f, setF] = useState({ date: today, employer: "", description: "Salary", amount: "" });
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
-  const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
+  const [flt, setFlt] = useState(emptyFilters);
 
   async function load() {
-    const { data } = await supabase.from("salary").select("*").order("pay_date").order("created_at");
-    setRows(data || []);
+    const { data: b } = await supabase.from("transactions").select("id,tx_date,description,notes,income,fx_rate_inr,accounts!inner(kind,institution,name)").eq("category", "Salary").eq("accounts.kind", "bank").gt("income", 0);
+    const { data: m } = await supabase.from("salary").select("*");
+    const fromBank = (b || []).map((x) => ({ id: x.id, src: "bank", tx_date: x.tx_date, category: "Salary", description: x.description, notes: x.notes, income: Number(x.income), expense: 0, fx: x.fx_rate_inr, account: `${x.accounts.institution} – ${x.accounts.name}` }));
+    const manual = (m || []).map((x) => ({ id: x.id, src: "manual", tx_date: x.pay_date, category: "Salary", description: [x.employer, x.description].filter(Boolean).join(" – "), notes: "Older manual entry", income: Number(x.amount), expense: 0, fx: x.fx_rate_inr, account: "Salary tab (older)" }));
+    setRows([...fromBank, ...manual].sort((p, q) => p.tx_date.localeCompare(q.tx_date)));
     setLatest((await getRate()) || 0);
   }
   useEffect(() => { load(); }, []);
 
-  async function add(e) {
-    e.preventDefault(); setBusy(true); setError("");
-    const amt = Number(f.amount);
-    if (!(amt > 0)) { setError("Enter an amount greater than 0."); setBusy(false); return; }
-    const fx = await getRate(f.date);
-    const { error } = await supabase.from("salary").insert({ pay_date: f.date, employer: f.employer, description: f.description, amount: amt, fx_rate_inr: fx });
-    if (error) setError(error.message); else { setF({ ...f, amount: "" }); load(); }
-    setBusy(false);
-  }
-  async function del(id) {
-    if (!confirm("Delete this deposit?")) return;
+  async function delManual(id) {
+    if (!confirm("Delete this older manual entry?")) return;
     await supabase.from("salary").delete().eq("id", id);
     load();
   }
   if (!rows) return null;
 
-  let run = 0, runInr = 0;
-  const list = rows.map((r) => {
-    const fx = r.fx_rate_inr ?? latest;
-    run += Number(r.amount); runInr += Number(r.amount) * fx;
-    return { ...r, fx, run, inrAmt: Number(r.amount) * fx };
-  });
+  let run = 0;
+  const all = rows.map((r) => { run += r.income; return { ...r, rate: r.fx ?? latest, run }; });
+  const list = applyFilters(all, flt).reverse();
+  const total = list.reduce((s, r) => s + r.income, 0);
+  const totalInr = list.reduce((s, r) => s + r.income * r.rate, 0);
+  const tag = isFiltered(flt) ? " (filtered)" : "";
 
   return (
     <>
       <h1>Salary</h1>
-      <p className="sub">Record each pay deposit. These count as Salary income in your Annual Budget and Household totals.</p>
-      <div className="grid" style={{ marginBottom: "1rem" }}>
-        <div className="card stat"><small>Total earned</small><h2>{cad(run)}</h2><small>{inr(runInr)}</small></div>
-        <div className="card stat"><small>Deposits recorded</small><h2>{rows.length}</h2></div>
+      <p className="sub">A reference view built automatically from bank transactions with the category <strong>Salary</strong>. To add or change a pay deposit, use <Link href="/bank" style={{ color: "var(--accent)" }}>Bank transactions</Link>.</p>
+      <div className="grid">
+        <div className="card stat"><small>Total salary{tag}</small><h2 className="pos">{cad(total)}</h2><small>{inr(totalInr)}</small></div>
+        <div className="card stat"><small>Deposits{tag}</small><h2>{list.length}</h2></div>
+        <div className="card stat"><small>Average deposit{tag}</small><h2>{cad(list.length ? total / list.length : 0)}</h2></div>
       </div>
-      <form className="card" onSubmit={add}>
-        {error && <div className="msg err">{error}</div>}
-        <div className="form-row">
-          <label>Pay date<input type="date" required value={f.date} onChange={set("date")} /></label>
-          <label>Employer<input value={f.employer} onChange={set("employer")} placeholder="e.g. Amazon" /></label>
-          <label>Description<input value={f.description} onChange={set("description")} /></label>
-          <label>Amount (CAD)<input type="number" step="0.01" min="0" required value={f.amount} onChange={set("amount")} /></label>
-          <button className="btn" disabled={busy}>{busy ? "Saving…" : "Add deposit"}</button>
-        </div>
-      </form>
+
+      <FilterBar f={flt} setF={setFlt} rows={all} showCategory={false} showType={false} />
+      <div className="barrow"><span>Showing {list.length} of {all.length} deposits</span></div>
+
       <div className="tbl-wrap">
         <table className="tbl">
-          <thead><tr><th>Date</th><th>Employer</th><th>Description</th><th className="num">Deposit</th><th className="num">Rate</th><th className="num">INR</th><th className="num">Running total</th><th></th></tr></thead>
+          <thead><tr><th>Date</th><th>Account</th><th>Description</th><th>Notes</th><th className="num">Amount</th><th className="num">Rate</th><th className="num">INR</th><th className="num">Running total</th><th></th></tr></thead>
           <tbody>
-            {list.length === 0 && <tr><td colSpan={8} style={{ color: "var(--muted)" }}>No deposits yet. Add your first pay above.</td></tr>}
+            {list.length === 0 && <tr><td colSpan={9} style={{ color: "var(--muted)" }}>{all.length ? "No deposits match these filters." : "No salary yet. Add a bank transaction with the category Salary and it appears here."}</td></tr>}
             {list.map((r) => (
-              <tr key={r.id}>
-                <td>{r.pay_date}</td><td>{r.employer}</td><td>{r.description}</td>
-                <td className="num">{cad(r.amount)}</td>
-                <td className="num">{r.fx_rate_inr ? Number(r.fx_rate_inr).toFixed(2) : "–"}</td>
-                <td className="num">{inr(r.inrAmt)}</td>
+              <tr key={r.src + r.id}>
+                <td className="dt">{r.tx_date}</td><td className="nw">{r.account}</td><td className="txt">{r.description}</td><td className="txt">{r.notes}</td>
+                <td className="num">{cad(r.income)}</td>
+                <td className="num">{r.fx ? Number(r.fx).toFixed(2) : "–"}</td>
+                <td className="num">{inr(r.income * r.rate)}</td>
                 <td className="num">{cad(r.run)}</td>
-                <td><button className="x" aria-label="Delete deposit" onClick={() => del(r.id)}>✕</button></td>
+                <td className="nw">{r.src === "manual" && <button className="x" title="Delete older manual entry" aria-label="Delete" onClick={() => delManual(r.id)}>✕</button>}</td>
               </tr>
             ))}
           </tbody>
-          <tfoot><tr><td colSpan={3}>Total</td><td className="num">{cad(run)}</td><td></td><td className="num">{inr(runInr)}</td><td></td><td></td></tr></tfoot>
+          <tfoot><tr><td colSpan={4}>Total{tag}</td><td className="num">{cad(total)}</td><td></td><td className="num">{inr(totalInr)}</td><td></td><td></td></tr></tfoot>
         </table>
       </div>
     </>

@@ -25,7 +25,6 @@ export default function Dashboard() {
     (async () => {
       const a = `${year}-01-01`, b = `${year}-12-31`;
       const { data: t } = await supabase.from("transactions").select("tx_date,category,income,expense,fx_rate_inr,accounts!inner(kind)").gte("tx_date", a).lte("tx_date", b);
-      const { data: s } = await supabase.from("salary").select("pay_date,amount,fx_rate_inr").gte("pay_date", a).lte("pay_date", b);
       const r = [];
       (t || []).forEach((x) => {
         if (SKIP.includes(x.category)) return;
@@ -33,10 +32,9 @@ export default function Dashboard() {
         if (Number(x.expense)) r.push({ m, cat: x.category, type: "spend", amt: Number(x.expense), fx });
         if (Number(x.income)) {
           if (card) r.push({ m, cat: x.category, type: "spend", amt: -Number(x.income), fx }); // refunds reduce spending
-          else if (x.category !== "Salary") r.push({ m, cat: x.category, type: "inc", amt: Number(x.income), fx });
+          else r.push({ m, cat: x.category, type: "inc", amt: Number(x.income), fx });
         }
       });
-      (s || []).forEach((x) => r.push({ m: Number(x.pay_date.slice(5, 7)) - 1, cat: "Salary", type: "inc", amt: Number(x.amount), fx: x.fx_rate_inr }));
       setRows(r);
       setLatest((await getRate()) || 0);
     })();
@@ -78,7 +76,7 @@ export default function Dashboard() {
   return (
     <>
       <h1>Dashboard</h1>
-      <p className="sub">Income and spending from your bank accounts, cards and salary. Card bill payments are skipped so nothing is counted twice.</p>
+      <p className="sub">Income and spending from your bank accounts and cards. Card bill payments are skipped so nothing is counted twice.</p>
       <div style={{ display: "flex", gap: ".75rem", marginBottom: "1rem", flexWrap: "wrap" }}>
         <select className="sel" style={{ width: 110 }} value={year} onChange={(e) => setYear(Number(e.target.value))} aria-label="Year">
           {Array.from({ length: 6 }, (_, i) => thisYear + 1 - i).map((y) => <option key={y}>{y}</option>)}
@@ -95,7 +93,7 @@ export default function Dashboard() {
       {rows.length === 0 ? (
         <div className="card">
           <h3>No data for {year} yet</h3>
-          <p className="sub">Add transactions or salary deposits and your charts will appear here.</p>
+          <p className="sub">Add transactions and your charts will appear here.</p>
           <Link className="btn" href="/bank">Add a transaction</Link>
         </div>
       ) : (

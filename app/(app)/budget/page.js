@@ -16,15 +16,13 @@ export default function Budget() {
   const [year, setYear] = useState(thisYear);
   const [mode, setMode] = useState("CAD");
   const [tx, setTx] = useState([]);
-  const [sal, setSal] = useState([]);
   const [latest, setLatest] = useState(0);
 
   useEffect(() => {
     (async () => {
       const a = `${year}-01-01`, b = `${year}-12-31`;
       const { data: t } = await supabase.from("transactions").select("tx_date,category,income,expense,fx_rate_inr,accounts!inner(kind)").eq("accounts.kind", "bank").gte("tx_date", a).lte("tx_date", b);
-      const { data: s } = await supabase.from("salary").select("pay_date,amount,fx_rate_inr").gte("pay_date", a).lte("pay_date", b);
-      setTx(t || []); setSal(s || []);
+      setTx(t || []);
       setLatest((await getRate()) || 0);
     })();
   }, [year]);
@@ -35,10 +33,9 @@ export default function Budget() {
   BANK_CATEGORIES.forEach((c) => { inc[c] = zeros(); exp[c] = zeros(); });
   tx.forEach((t) => {
     const m = Number(t.tx_date.slice(5, 7)) - 1;
-    if (Number(t.income) && t.category !== "Salary") inc[t.category][m] += w(t.income, t.fx_rate_inr); // Salary comes from the Salary tab
+    if (Number(t.income)) inc[t.category][m] += w(t.income, t.fx_rate_inr);
     if (Number(t.expense)) exp[t.category][m] += w(t.expense, t.fx_rate_inr);
   });
-  sal.forEach((s) => { inc["Salary"][Number(s.pay_date.slice(5, 7)) - 1] += w(s.amount, s.fx_rate_inr); });
 
   const monthly = (g) => MONTHS.map((_, i) => sum(BANK_CATEGORIES.map((c) => g[c][i])));
   const mi = monthly(inc), me = monthly(exp);
@@ -70,7 +67,7 @@ export default function Budget() {
   return (
     <div style={{ maxWidth: "100%" }}>
       <h1>Annual budget</h1>
-      <p className="sub">Built from your bank transactions and Salary tab. Card spending shows up here as CC Bill payments.</p>
+      <p className="sub">Built from your bank transactions (salary deposits are included as Salary income). Card spending shows up here as CC Bill payments.</p>
       <div style={{ display: "flex", gap: ".75rem", marginBottom: "1rem", flexWrap: "wrap" }}>
         <select className="sel" style={{ width: 120 }} value={year} onChange={(e) => setYear(Number(e.target.value))} aria-label="Year">
           {Array.from({ length: 6 }, (_, i) => thisYear + 1 - i).map((y) => <option key={y}>{y}</option>)}

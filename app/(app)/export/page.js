@@ -56,7 +56,10 @@ export default function ExportImport() {
       sheet(wb, "Card Transactions", cols("Debit", "Credit", "Credit Remaining"), mk("card"));
       let run = 0;
       sheet(wb, "Salary", [["Date", "date", 14, D], ["Employer", "employer", 20], ["Description", "description", 24], ["Amount", "amount", 14, $], ["CAD to INR", "fx", 11, "0.00"], ["INR amount", "inr", 15, "#,##0"], ["Total", "run", 16, $]],
-        sal.map((s) => { run += Number(s.amount); return { date: asDate(s.pay_date), employer: s.employer, description: s.description, amount: Number(s.amount), fx: Number(s.fx_rate_inr) || null, inr: Number(s.amount) * (Number(s.fx_rate_inr) || 0), run }; }));
+        [
+          ...tx.filter((t) => t.category === "Salary" && Number(t.income) > 0 && byAcc[t.account_id]?.kind === "bank").map((t) => ({ d: t.tx_date, employer: `${byAcc[t.account_id].institution} - ${byAcc[t.account_id].name}`, description: t.description, amount: Number(t.income), fx: Number(t.fx_rate_inr) || 0 })),
+          ...sal.map((s) => ({ d: s.pay_date, employer: s.employer, description: s.description, amount: Number(s.amount), fx: Number(s.fx_rate_inr) || 0 })),
+        ].sort((a, b) => a.d.localeCompare(b.d)).map((s) => { run += s.amount; return { date: asDate(s.d), employer: s.employer, description: s.description, amount: s.amount, fx: s.fx || null, inr: s.amount * s.fx, run }; }));
       sheet(wb, "Accounts", [["Type", "kind", 10], ["Institution", "inst", 18], ["Name", "name", 22], ["Opening balance / credit limit", "start", 24, $], ["Current balance / credit remaining", "now", 28, $]],
         acc.map((a) => ({ kind: a.kind, inst: a.institution, name: a.name, start: Number(a.kind === "card" ? a.credit_limit : a.opening_balance) || 0, now: bal[a.id] })));
       const sum = {};
@@ -144,9 +147,9 @@ export default function ExportImport() {
       </div>
       <div className="card">
         <h3>Import from Excel</h3>
-        <p className="sub">Use a sheet with a header row like your old ones: Date, Category, Description, Expense/Debit, Income/Credit, Notes. Salary sheets need Date, Description and Debit or Amount. Imported rows get that day's INR rate.</p>
+        <p className="sub">Use a sheet with a header row like your old ones: Date, Category, Description, Expense/Debit, Income/Credit, Notes. Import salary as bank transactions with the category Salary; it then appears on the Salary tab automatically. Imported rows get that day's INR rate.</p>
         <div className="form-row">
-          <label>What are you importing?<select className="sel" value={target} onChange={(e) => setTarget(e.target.value)}><option value="bank">Bank transactions</option><option value="card">Card transactions</option><option value="salary">Salary deposits</option></select></label>
+          <label>What are you importing?<select className="sel" value={target} onChange={(e) => setTarget(e.target.value)}><option value="bank">Bank transactions</option><option value="card">Card transactions</option></select></label>
           {target !== "salary" && (
             <label>Account<select className="sel" value={accId} onChange={(e) => setAccId(e.target.value)}>{accOpts.length === 0 && <option value="">Add an account first</option>}{accOpts.map((a) => <option key={a.id} value={a.id}>{a.institution} – {a.name}</option>)}</select></label>
           )}
