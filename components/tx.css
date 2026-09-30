@@ -1,0 +1,14 @@
+.form-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:.75rem;align-items:end}
+.form-row label{display:grid;gap:.3rem;font-size:.85rem;color:var(--muted)}
+.form-row input,.sel{background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:.6rem .7rem;font:inherit;width:100%}
+.tbl-wrap{overflow-x:auto;margin-top:1rem;border:1px solid var(--line);border-radius:14px}
+table.tbl{width:100%;border-collapse:collapse;font-size:.9rem;background:var(--surface)}
+.tbl th{text-align:left;padding:.65rem;background:var(--accent);color:var(--accent-ink);white-space:nowrap}
+.tbl td{padding:.55rem .65rem;border-bottom:1px solid var(--line)}
+.tbl tbody tr:nth-child(even) td{background:color-mix(in srgb,var(--accent) 6%,transparent)}
+.tbl tfoot td{font-weight:700;border-bottom:0}
+.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.neg{color:var(--bad)}.pos{color:var(--good)}
+.stat small{color:var(--muted);display:block}
+.stat h2{margin-top:.2rem}
+.x{background:none;border:0;color:var(--muted);cursor:pointer;font-size:1rem}
