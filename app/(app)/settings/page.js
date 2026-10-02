@@ -94,6 +94,7 @@ export default function Settings() {
       <ListEditor title="Card transaction categories" note="CC Bill and Int. Transfers are built in." items={s.cardCats} setItems={up("cardCats")} locked={LOCKED_CARD} />
       <ListEditor title="Banks" items={s.banks} setItems={up("banks")} />
       <ListEditor title="Credit cards" items={s.cards} setItems={up("cards")} />
+      <p className="sub" style={{ fontSize: ".85rem" }}>Privacy: the site administrator can see your name, email, country and how many accounts and entries you have. The admin portal never shows amounts, descriptions or notes.</p>
       <button className="btn" disabled={busy} onClick={save}>{busy ? "Saving…" : isNew ? "Save and continue" : "Save settings"}</button>
       {!isNew && <p className="sub" style={{ marginTop: ".75rem", fontSize: ".85rem" }}>Removing a category does not change entries you already saved with it.</p>}
     </>

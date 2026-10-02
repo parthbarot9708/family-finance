@@ -19,6 +19,7 @@ export default function AppLayout({ children }) {
   const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(undefined); // undefined = loading, null = not set up yet
   const [later, setLater] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => (data.session ? setUser(data.session.user) : router.replace("/login")));
@@ -33,6 +34,8 @@ export default function AppLayout({ children }) {
     });
   }, [user]);
 
+  useEffect(() => { if (user) supabase.rpc("is_admin").then(({ data }) => setIsAdmin(data === true)); }, [user]);
+
   useEffect(() => { if (profile === null && path !== "/settings") router.replace("/settings"); }, [profile, path, router]);
 
   if (!user || profile === undefined || (profile === null && path !== "/settings")) return null;
@@ -44,7 +47,7 @@ export default function AppLayout({ children }) {
     <div className="shell">
       <nav className="side" aria-label="Main">
         <div className="brand">Family Finance</div>
-        {NAV.map(([href, label]) => <Link key={href} href={href} className={`nav ${path === href ? "on" : ""}`}>{label}</Link>)}
+        {(isAdmin ? [...NAV, ["/admin", "Admin"]] : NAV).map(([href, label]) => <Link key={href} href={href} className={`nav ${path === href ? "on" : ""}`}>{label}</Link>)}
         <div className="foot">
           <span>{user.user_metadata?.name || user.email}</span>
           <div style={{ display: "flex", gap: ".5rem" }}>
