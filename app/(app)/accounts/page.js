@@ -3,10 +3,11 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { getRate } from "@/lib/fx";
 import { cad, inr } from "@/lib/format";
-import { BANKS, CARDS } from "@/lib/categories";
+import { getCfg } from "@/lib/settings";
 import "@/components/tx.css";
 
 export default function Accounts() {
+  const BANKS = getCfg().banks, CARDS = getCfg().cards;
   const [accounts, setAccounts] = useState(null);
   const [tx, setTx] = useState([]);
   const [latest, setLatest] = useState(0);
@@ -60,7 +61,7 @@ export default function Accounts() {
           <label>Type<select className="sel" value={f.kind} onChange={(e) => setF({ ...f, kind: e.target.value, institution: (e.target.value === "bank" ? BANKS : CARDS)[0] })}><option value="bank">Bank account</option><option value="card">Credit card</option></select></label>
           <label>{f.kind === "bank" ? "Bank" : "Card"}<select className="sel" value={f.institution} onChange={set("institution")}>{options.map((o) => <option key={o}>{o}</option>)}</select></label>
           <label>Nickname<input value={f.name} onChange={set("name")} placeholder={f.kind === "bank" ? "Chequing" : "Cashback"} /></label>
-          <label>{f.kind === "bank" ? "Opening balance (CAD)" : "Credit limit (CAD)"}<input type="number" step="0.01" value={f.amount} onChange={set("amount")} /></label>
+          <label>{f.kind === "bank" ? `Opening balance (${getCfg().base})` : `Credit limit (${getCfg().base})`}<input type="number" step="0.01" value={f.amount} onChange={set("amount")} /></label>
           <button className="btn">Add account</button>
         </div>
       </form>
@@ -81,7 +82,7 @@ export default function Accounts() {
               <div style={{ display: "grid", gap: ".6rem", margin: ".75rem 0" }}>
                 <label className="field" style={{ margin: 0 }}>{isCard ? "Card" : "Bank"}<select className="sel" value={ed.institution} onChange={(e) => setEd({ ...ed, institution: e.target.value })}>{(isCard ? CARDS : BANKS).concat(ed.institution && !(isCard ? CARDS : BANKS).includes(ed.institution) ? [ed.institution] : []).map((o) => <option key={o}>{o}</option>)}</select></label>
                 <label className="field" style={{ margin: 0 }}>Nickname<input className="sel" value={ed.name} onChange={(e) => setEd({ ...ed, name: e.target.value })} /></label>
-                <label className="field" style={{ margin: 0 }}>{isCard ? "Credit limit (CAD)" : "Opening balance (CAD)"}<input className="sel" type="number" step="0.01" value={ed.amount} onChange={(e) => setEd({ ...ed, amount: e.target.value })} /></label>
+                <label className="field" style={{ margin: 0 }}>{isCard ? `Credit limit (${getCfg().base})` : `Opening balance (${getCfg().base})`}<input className="sel" type="number" step="0.01" value={ed.amount} onChange={(e) => setEd({ ...ed, amount: e.target.value })} /></label>
               </div>
               <div style={{ display: "flex", gap: ".5rem" }}><button className="btn" onClick={() => saveEdit(a)}>Save</button><button className="btn ghost" onClick={() => setEditId(null)}>Cancel</button></div>
             </div>

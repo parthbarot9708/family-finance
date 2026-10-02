@@ -5,11 +5,12 @@ import { LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, Tooltip, Legend, Re
 import { supabase } from "@/lib/supabase";
 import { getRate } from "@/lib/fx";
 import { cad, inr } from "@/lib/format";
+import { getCfg, CURRENCIES } from "@/lib/settings";
 import "@/components/tx.css";
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const SKIP = ["CC Bill", "Int. Transfers"]; // card bills are counted through card purchases; own-account moves aren't spending
-const FIXED = ["Rent", "Loan", "Insurance", "Tax", "Education", "Phone", "GIC"];
+const FIXED = ["Rent", "Loan", "Insurance", "Tax", "Education", "Phone", "GIC", "Rent / Mortgage", "Loan Payment", "EMI / Loan", "Taxes", "Health", "Medical", "SIP / Investments", "FD / RD", "Savings / Investments", "Mobile & Internet"];
 const COLORS = ["#1E3A5F", "#B08D57", "#2F7D5B", "#9B4A4A", "#5B7C99", "#C9A96E", "#6B5B95", "#8A8F98"];
 const sum = (a) => a.reduce((s, n) => s + n, 0);
 
@@ -20,6 +21,7 @@ export default function Dashboard() {
   const [mode, setMode] = useState("CAD");
   const [rows, setRows] = useState(null);
   const [latest, setLatest] = useState(0);
+  const [budgets, setBudgets] = useState([]);
 
   useEffect(() => {
     (async () => {
@@ -36,6 +38,8 @@ export default function Dashboard() {
         }
       });
       setRows(r);
+      const { data: bd } = await supabase.from("budgets").select("category,monthly_limit");
+      setBudgets(bd || []);
       setLatest((await getRate()) || 0);
     })();
   }, [year]);
@@ -71,7 +75,29 @@ export default function Dashboard() {
   if (flex[1]) tips.push(`Next are ${flex.slice(1).map((c) => c.name).join(" and ")}. Setting a monthly limit for each is the simplest way to keep them steady.`);
   if (over.length) tips.push(`Spending ran more than 15% above your monthly average (${fmt(avg)}) in ${over.join(", ")}. Check those months for one-off purchases.`);
   if (rate !== null && rate < 20) tips.push(`You are keeping ${rate}% of income. To reach a 20% savings rate you would set aside another ${fmt(Math.max(0, tInc * 0.2 - saved))} in this period.`);
-  if (rate !== null && rate >= 20) tips.push(`You are keeping ${rate}% of income, which is a strong savings rate. Moving the surplus into your monthly Remitly transfer keeps it working toward your plan.`);
+  if (rate !== null && rate >= 20) tips.push(`You are keeping ${rate}% of income, which is a strong savings rate. Moving the surplus into your monthly savings plan keeps it working toward your goals.`);
+
+  const bm = month >= 0 ? month : year === thisYear ? new Date().getMonth() : 11;
+  const spentBy = {};
+  rows.filter((r) => r.type === "spend" && r.m === bm).forEach((r) => (spentBy[r.cat] = (spentBy[r.cat] || 0) + r.amt));
+  const limits = budgets.map((b) => { const spent = spentBy[b.category] || 0, lim = Number(b.monthly_limit); return { cat: b.category, spent, lim, pct: lim > 0 ? (spent / lim) * 100 : 0 }; }).sort((x, y) => y.pct - x.pct);
+  const warned = limits.filter((l) => l.pct >= 80);
+  const tone = (p) => (p >= 100 ? "var(--bad)" : p >= 80 ? "var(--gold)" : "var(--good)");
+  const limitsBlock = limits.length > 0 && (
+    <div className="card" style={{ marginTop: "1rem" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: ".5rem" }}>
+        <h3>Budget limits · {MONTHS[bm]} {year}</h3>
+        <Link href="/limits" style={{ color: "var(--accent)" }}>Edit limits</Link>
+      </div>
+      {warned.length > 0 && <div className="msg err" style={{ marginTop: ".75rem" }}>{warned.length} {warned.length > 1 ? "categories are" : "category is"} at 80% or more of the limit.</div>}
+      {limits.map((l) => (
+        <div key={l.cat} style={{ marginTop: ".7rem" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", fontSize: ".9rem" }}><span>{l.cat}</span><span style={{ color: l.pct >= 80 ? tone(l.pct) : "var(--muted)" }}>{cad(l.spent)} of {cad(l.lim)} · {Math.round(l.pct)}%</span></div>
+          <div style={{ height: 8, background: "var(--line)", borderRadius: 8 }}><div style={{ width: `${Math.min(100, l.pct)}%`, height: 8, borderRadius: 8, background: tone(l.pct) }} /></div>
+        </div>
+      ))}
+    </div>
+  );
 
   return (
     <>
@@ -86,7 +112,7 @@ export default function Dashboard() {
           {MONTHS.map((m, i) => <option key={m} value={i}>{m}</option>)}
         </select>
         <select className="sel" style={{ width: 170 }} value={mode} onChange={(e) => setMode(e.target.value)} aria-label="Currency">
-          <option value="CAD">Canadian dollars</option><option value="INR">Indian rupees</option>
+          <option value="CAD">{CURRENCIES[getCfg().base]?.name || getCfg().base}</option><option value="INR">{CURRENCIES[getCfg().second]?.name || getCfg().second}</option>
         </select>
       </div>
 
@@ -105,6 +131,7 @@ export default function Dashboard() {
             <div className="card stat"><small>Average monthly spending</small><h2>{fmt(avg)}</h2><small>{activeMonths} month{activeMonths > 1 ? "s" : ""} with spending</small></div>
           </div>
 
+          {limitsBlock}
           <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(340px,1fr))", marginTop: "1rem" }}>
             <div className="card" style={{ height: 340 }}>
               <h3 style={{ marginBottom: ".5rem" }}>Monthly cost trend</h3>

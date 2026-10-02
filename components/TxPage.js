@@ -4,6 +4,7 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { getRate } from "@/lib/fx";
 import { cad, inr } from "@/lib/format";
+import { getCfg } from "@/lib/settings";
 import { FilterBar, applyFilters, emptyFilters, isFiltered } from "./Filters";
 import "./tx.css";
 
@@ -47,6 +48,10 @@ export default function TxPage({ kind, title, categories }) {
     const amt = Number(f.amount);
     if (!(amt > 0)) { setError("Enter an amount greater than 0."); setBusy(false); return; }
     const body = { tx_date: f.date, category: f.category, description: f.description, notes: f.notes, expense: f.type === "expense" ? amt : 0, income: f.type === "income" ? amt : 0 };
+    if (!editing) {
+      const { data: dup } = await supabase.from("transactions").select("id").eq("tx_date", f.date).eq("description", f.description).or(`expense.eq.${amt},income.eq.${amt}`).limit(1);
+      if (dup?.length && !confirm("An entry with the same date, amount and description already exists. Add it anyway?")) { setBusy(false); return; }
+    }
     let err;
     if (editing) {
       const fx = editing.tx_date === f.date && editing.fx_rate_inr ? editing.fx_rate_inr : await getRate(f.date);
@@ -100,7 +105,7 @@ export default function TxPage({ kind, title, categories }) {
   return (
     <>
       <h1>{title}</h1>
-      <p className="sub">Each entry saves that day's CAD to INR rate. Latest rate: {latest ? `₹${latest.toFixed(2)}` : "unavailable"}.</p>
+      <p className="sub">Each entry saves that day's {getCfg().base} to {getCfg().second} rate. Latest rate: {latest ? `${getCfg().second} ${latest.toFixed(2)}` : "unavailable"}.</p>
       <div style={{ maxWidth: 320, marginBottom: "1rem" }}>
         <select className="sel" value={accId} onChange={(e) => setAccId(e.target.value)} aria-label="Account">
           {accounts.map((a) => <option key={a.id} value={a.id}>{a.institution} – {a.name}</option>)}
@@ -119,10 +124,10 @@ export default function TxPage({ kind, title, categories }) {
         {error && <div className="msg err">{error}</div>}
         <div className="form-row">
           <label>Date<input type="date" required value={f.date} onChange={set("date")} /></label>
-          <label>Category<select className="sel" value={f.category} onChange={set("category")}>{categories.map((c) => <option key={c}>{c}</option>)}</select></label>
+          <label>Category<select className="sel" value={f.category} onChange={set("category")}>{(categories.includes(f.category) ? categories : [...categories, f.category]).map((c) => <option key={c}>{c}</option>)}</select></label>
           <label>Description<input value={f.description} onChange={set("description")} placeholder="e.g. No Frills" /></label>
           <label>Type<select className="sel" value={f.type} onChange={set("type")}><option value="expense">{L.out}</option><option value="income">{L.inn}</option></select></label>
-          <label>Amount (CAD)<input type="number" step="0.01" min="0" required value={f.amount} onChange={set("amount")} /></label>
+          <label>Amount ({getCfg().base})<input type="number" step="0.01" min="0" required value={f.amount} onChange={set("amount")} /></label>
           <label>Notes<input value={f.notes} onChange={set("notes")} placeholder="Optional" /></label>
           <div style={{ display: "flex", gap: ".5rem" }}>
             <button className="btn" disabled={busy}>{busy ? "Saving…" : editing ? "Save changes" : "Add entry"}</button>
@@ -149,7 +154,7 @@ export default function TxPage({ kind, title, categories }) {
         <table className="tbl">
           <thead><tr>
             <th className="chk"><input type="checkbox" aria-label="Select all" checked={allSel} onChange={() => setSel(allSel ? new Set() : new Set(list.map((r) => r.id)))} /></th>
-            <th>Date</th><th>Category</th><th>Description</th><th>Notes</th><th className="num">{L.out}</th><th className="num">{L.inn}</th><th className="num">Rate</th><th className="num">INR</th><th className="num">{isCard ? "Remaining" : "Balance"}</th><th></th>
+            <th>Date</th><th>Category</th><th>Description</th><th>Notes</th><th className="num">{L.out}</th><th className="num">{L.inn}</th><th className="num">Rate</th><th className="num">{getCfg().second}</th><th className="num">{isCard ? "Remaining" : "Balance"}</th><th></th>
           </tr></thead>
           <tbody>
             {list.length === 0 && <tr><td colSpan={11} style={{ color: "var(--muted)" }}>{rows.length ? "No entries match these filters." : "No entries yet. Add your first one above."}</td></tr>}

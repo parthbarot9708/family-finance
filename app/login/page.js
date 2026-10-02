@@ -39,7 +39,7 @@ export default function Login() {
         <strong style={{ fontFamily: "var(--font-head)", fontSize: "1.3rem" }}>Family Finance</strong>
         <div>
           <h1>Know where every dollar goes.</h1>
-          <p>Track bank accounts, cards and salary in CAD, see the value in INR, and plan your savings through 2028.</p>
+          <p>Track bank accounts and cards in your own currency, see the value in a second currency, and plan your savings.</p>
         </div>
         <small>Private to you. Your data is visible only to you and your household.</small>
       </aside>

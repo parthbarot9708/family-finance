@@ -4,7 +4,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, Cart
 import { supabase } from "@/lib/supabase";
 import { getRate } from "@/lib/fx";
 import { cad, inr } from "@/lib/format";
-import { BANK_CATEGORIES } from "@/lib/categories";
+import { getCfg, CURRENCIES } from "@/lib/settings";
 import "@/components/tx.css";
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -29,15 +29,16 @@ export default function Budget() {
 
   const w = (amt, fx) => (mode === "INR" ? Number(amt) * (fx ?? latest) : Number(amt));
   const fmt = mode === "INR" ? inr : cad;
+  const catsAll = [...new Set([...getCfg().bankCats, ...tx.map((t) => t.category)])];
   const inc = {}, exp = {};
-  BANK_CATEGORIES.forEach((c) => { inc[c] = zeros(); exp[c] = zeros(); });
+  catsAll.forEach((c) => { inc[c] = zeros(); exp[c] = zeros(); });
   tx.forEach((t) => {
     const m = Number(t.tx_date.slice(5, 7)) - 1;
     if (Number(t.income)) inc[t.category][m] += w(t.income, t.fx_rate_inr);
     if (Number(t.expense)) exp[t.category][m] += w(t.expense, t.fx_rate_inr);
   });
 
-  const monthly = (g) => MONTHS.map((_, i) => sum(BANK_CATEGORIES.map((c) => g[c][i])));
+  const monthly = (g) => MONTHS.map((_, i) => sum(catsAll.map((c) => g[c][i])));
   const mi = monthly(inc), me = monthly(exp);
   const tIn = sum(mi), tEx = sum(me);
   const chart = MONTHS.map((m, i) => ({ m, Income: Math.round(mi[i]), Expenses: Math.round(me[i]) }));
@@ -49,7 +50,7 @@ export default function Budget() {
         <table className="tbl">
           <thead><tr><th>Item</th>{MONTHS.map((m) => <th key={m} className="num">{m}</th>)}<th className="num">Total</th><th className="num">Average</th></tr></thead>
           <tbody>
-            {BANK_CATEGORIES.map((c) => (
+            {catsAll.map((c) => (
               <tr key={c}>
                 <td>{c}</td>
                 {g[c].map((v, i) => <td key={i} className="num">{v ? fmt(v) : "–"}</td>)}
@@ -73,7 +74,7 @@ export default function Budget() {
           {Array.from({ length: 6 }, (_, i) => thisYear + 1 - i).map((y) => <option key={y}>{y}</option>)}
         </select>
         <select className="sel" style={{ width: 160 }} value={mode} onChange={(e) => setMode(e.target.value)} aria-label="Currency">
-          <option value="CAD">Canadian dollars</option><option value="INR">Indian rupees</option>
+          <option value="CAD">{CURRENCIES[getCfg().base]?.name || getCfg().base}</option><option value="INR">{CURRENCIES[getCfg().second]?.name || getCfg().second}</option>
         </select>
       </div>
       <div className="grid">
