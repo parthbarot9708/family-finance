@@ -150,8 +150,8 @@ export default function ExportImport() {
 
   return (
     <>
-      <h1>Export / Import</h1>
-      <p className="sub">Download everything as Excel whenever you need it, or bring in your old Excel sheets.</p>
+      <h1>Export & backup</h1>
+      <p className="sub">Download everything as Excel whenever you need it. To add transactions from a bank statement, use Import statement instead.</p>
       {msg && <div className={`msg ${msg.ok ? "ok" : "err"}`}>{msg.t}</div>}
       <div className="card" style={{ marginBottom: "1rem" }}>
         <h3>Export to Excel</h3>
@@ -159,7 +159,7 @@ export default function ExportImport() {
         <button className="btn" disabled={busy} onClick={doExport}>{busy ? "Working…" : "Download Excel file"}</button>
       </div>
       <div className="card">
-        <h3>Import from Excel</h3>
+        <h3>Import from our Excel layout (advanced)</h3>
         <p className="sub">Use a sheet with a header row like your old ones: Date, Category, Description, Expense/Debit, Income/Credit, Notes. Import salary as bank transactions with the category Salary; it then appears on the Salary tab automatically. Imported rows get that day's exchange rate.</p>
         <div className="form-row">
           <label>What are you importing?<select className="sel" value={target} onChange={(e) => setTarget(e.target.value)}><option value="bank">Bank transactions</option><option value="card">Card transactions</option></select></label>

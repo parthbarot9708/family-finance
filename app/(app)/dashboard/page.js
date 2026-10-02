@@ -131,7 +131,6 @@ export default function Dashboard() {
             <div className="card stat"><small>Average monthly spending</small><h2>{fmt(avg)}</h2><small>{activeMonths} month{activeMonths > 1 ? "s" : ""} with spending</small></div>
           </div>
 
-          {limitsBlock}
           <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(340px,1fr))", marginTop: "1rem" }}>
             <div className="card" style={{ height: 340 }}>
               <h3 style={{ marginBottom: ".5rem" }}>Monthly cost trend</h3>
@@ -162,6 +161,8 @@ export default function Dashboard() {
               )}
             </div>
           </div>
+
+          {limitsBlock}
 
           <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(340px,1fr))", marginTop: "1rem" }}>
             <div className="card">

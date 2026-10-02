@@ -24,7 +24,7 @@ const GROUPS = [
   { label: "Money", icon: "money", href: "/bank", tabs: [["/bank", "Bank"], ["/cards", "Cards"], ["/salary", "Salary"]] },
   { label: "Plan", icon: "plan", href: "/limits", tabs: [["/limits", "Monthly limits"], ["/budget", "Annual budget"], ["/projection", "Projection & goals"]] },
   { label: "Household", icon: "people", href: "/household", tabs: [] },
-  { label: "More", icon: "more", href: "/accounts", tabs: [["/accounts", "Accounts"], ["/export", "Import & export"], ["/settings", "Settings"]] },
+  { label: "More", icon: "more", href: "/accounts", tabs: [["/accounts", "Accounts"], ["/import", "Import statement"], ["/export", "Export & backup"], ["/settings", "Settings"]] },
 ];
 
 export default function AppLayout({ children }) {
