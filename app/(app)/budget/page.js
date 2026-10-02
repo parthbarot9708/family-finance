@@ -47,7 +47,7 @@ export default function Budget() {
     <>
       <h2 style={{ margin: "1.75rem 0 .5rem" }}>{title}</h2>
       <div className="tbl-wrap" style={{ marginTop: 0 }}>
-        <table className="tbl">
+        <table className="tbl sticky1">
           <thead><tr><th>Item</th>{MONTHS.map((m) => <th key={m} className="num">{m}</th>)}<th className="num">Total</th><th className="num">Average</th></tr></thead>
           <tbody>
             {catsAll.map((c) => (

@@ -37,5 +37,60 @@ a{color:inherit}
 .sub{color:var(--muted);margin:0 0 1.5rem}
 .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1rem}
 .icon-btn{background:var(--surface);border:1px solid var(--line);color:var(--ink);border-radius:10px;width:40px;height:40px;cursor:pointer;font-size:1.05rem}
-@media(max-width:800px){.auth{grid-template-columns:1fr}.auth-art{display:none}.shell{grid-template-columns:1fr}.side{position:static;height:auto;flex-direction:row;flex-wrap:wrap;border-right:0;border-bottom:1px solid var(--line)}.side .brand{width:100%;margin:0}.side .foot{margin:0;width:100%}.main{padding:1.25rem}}
 @media(prefers-reduced-motion:reduce){*{transition:none!important}}
+
+/* ===== Round 9: simpler navigation + mobile ===== */
+.shell{grid-template-columns:232px 1fr}
+.side{padding:1.25rem 1rem}
+.side a.nav{display:flex;align-items:center;gap:.7rem;padding:.65rem .8rem;font-weight:600}
+.side a.nav svg,.bottombar svg{width:20px;height:20px;flex:none}
+.topbar,.bottombar{display:none}
+.subtabs{display:flex;gap:.4rem;overflow-x:auto;margin:0 0 1.25rem;padding-bottom:.2rem;scrollbar-width:none}
+.subtabs::-webkit-scrollbar{display:none}
+.subtabs a{white-space:nowrap;padding:.5rem 1rem;border-radius:999px;border:1px solid var(--line);color:var(--muted);text-decoration:none;font-weight:600;font-size:.9rem;background:var(--surface)}
+.subtabs a.on{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.pagehead{display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap;margin-bottom:.4rem}
+.searchrow{display:flex;gap:.5rem;flex-wrap:wrap}
+.searchrow .sel{flex:1;min-width:180px}
+.m-only{display:none}
+.sticky1 th:first-child,.sticky1 td:first-child{position:sticky;left:0;z-index:2;background:var(--surface)}
+.sticky1 thead th:first-child{background:var(--accent);z-index:3}
+@media(max-width:800px){
+  .auth{grid-template-columns:1fr}.auth-art{display:none}
+  .shell{display:block}
+  .side{display:none}
+  .topbar{display:flex;align-items:center;justify-content:space-between;gap:.5rem;position:sticky;top:0;z-index:20;background:var(--surface);border-bottom:1px solid var(--line);padding:.55rem 1rem}
+  .topbar .brand{font-family:var(--font-head);font-weight:600;font-size:1.15rem;margin-right:auto}
+  .bottombar{display:grid;grid-template-columns:repeat(5,1fr);position:fixed;bottom:0;left:0;right:0;z-index:30;background:var(--surface);border-top:1px solid var(--line);padding:.35rem .25rem calc(.35rem + env(safe-area-inset-bottom))}
+  .bottombar a{display:flex;flex-direction:column;align-items:center;gap:.15rem;text-decoration:none;color:var(--muted);font-size:.7rem;font-weight:600;padding:.35rem 0;border-radius:10px}
+  .bottombar a.on{color:var(--accent)}
+  .bottombar svg{width:22px;height:22px}
+  .main{padding:1rem 1rem calc(5.5rem + env(safe-area-inset-bottom))}
+  .main h1{font-size:1.5rem}
+  .grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .grid[style*="340px"]{grid-template-columns:minmax(0,1fr)!important}
+  .stat h2{font-size:1.2rem}
+  .form-row,.filters{grid-template-columns:1fr 1fr}
+  input,select,textarea{font-size:16px!important}
+  .btn,.icon-btn,.sel{min-height:44px}
+  .btn.sm{min-height:38px}
+  .tbl-wrap{max-height:none}
+  .hide-m{display:none}
+  .tbl.hm tfoot{display:none}
+}
+@media(max-width:700px){
+  .tbl.tx thead,.tbl.tx tfoot{display:none}
+  .tbl.tx,.tbl.tx tbody{display:block}
+  .tbl-wrap:has(.tbl.tx){border:0;background:transparent;overflow:visible}
+  .tbl.tx tr{display:grid;grid-template-columns:30px minmax(0,1fr) auto;grid-template-areas:"chk desc amt" "chk act bal";align-items:center;column-gap:.5rem;row-gap:.2rem;padding:.7rem .8rem;margin-bottom:.5rem;background:var(--surface);border:1px solid var(--line);border-radius:12px}
+  .tbl.tx tr.empty{display:block}
+  .tbl.tx td{display:block;padding:0;border:0;background:none!important;min-width:0;max-width:none}
+  .tbl.tx .c-chk{grid-area:chk}
+  .tbl.tx .c-desc{grid-area:desc;font-weight:600}
+  .tbl.tx .c-out,.tbl.tx .c-in{grid-area:amt;text-align:right;font-weight:700}
+  .tbl.tx .c-bal{grid-area:bal;text-align:right;font-size:.78rem;color:var(--muted)}
+  .tbl.tx .c-act{grid-area:act}
+  .tbl.tx .c-act .x{font-size:1.15rem;padding:.35rem .6rem}
+  .tbl.tx .c-date,.tbl.tx .c-cat,.tbl.tx .c-notes,.tbl.tx .c-rate,.tbl.tx .c-inr,.tbl.tx .zero{display:none}
+  .m-only{display:block;font-size:.78rem;color:var(--muted);font-weight:400}
+}

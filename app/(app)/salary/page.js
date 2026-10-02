@@ -4,6 +4,7 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { getRate } from "@/lib/fx";
 import { cad, inr } from "@/lib/format";
+import { getCfg } from "@/lib/settings";
 import { FilterBar, applyFilters, emptyFilters, isFiltered } from "@/components/Filters";
 import "@/components/tx.css";
 
@@ -50,17 +51,17 @@ export default function Salary() {
       <div className="barrow"><span>Showing {list.length} of {all.length} deposits</span></div>
 
       <div className="tbl-wrap">
-        <table className="tbl">
-          <thead><tr><th>Date</th><th>Account</th><th>Description</th><th>Notes</th><th className="num">Amount</th><th className="num">Rate</th><th className="num">INR</th><th className="num">Running total</th><th></th></tr></thead>
+        <table className="tbl hm">
+          <thead><tr><th>Date</th><th className="hide-m">Account</th><th>Description</th><th className="hide-m">Notes</th><th className="num">Amount</th><th className="num hide-m">Rate</th><th className="num">{getCfg().second}</th><th className="num hide-m">Running total</th><th></th></tr></thead>
           <tbody>
             {list.length === 0 && <tr><td colSpan={9} style={{ color: "var(--muted)" }}>{all.length ? "No deposits match these filters." : "No salary yet. Add a bank transaction with the category Salary and it appears here."}</td></tr>}
             {list.map((r) => (
               <tr key={r.src + r.id}>
-                <td className="dt">{r.tx_date}</td><td className="nw">{r.account}</td><td className="txt">{r.description}</td><td className="txt">{r.notes}</td>
+                <td className="dt">{r.tx_date}</td><td className="nw hide-m">{r.account}</td><td className="txt">{r.description}</td><td className="txt hide-m">{r.notes}</td>
                 <td className="num">{cad(r.income)}</td>
-                <td className="num">{r.fx ? Number(r.fx).toFixed(2) : "–"}</td>
+                <td className="num hide-m">{r.fx ? Number(r.fx).toFixed(2) : "–"}</td>
                 <td className="num">{inr(r.income * r.rate)}</td>
-                <td className="num">{cad(r.run)}</td>
+                <td className="num hide-m">{cad(r.run)}</td>
                 <td className="nw">{r.src === "manual" && <button className="x" title="Delete older manual entry" aria-label="Delete" onClick={() => delManual(r.id)}>✕</button>}</td>
               </tr>
             ))}
